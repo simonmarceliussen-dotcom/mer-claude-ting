@@ -5,9 +5,9 @@ ting for claude
 ## My Claude token usage
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="cards/usage-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="cards/usage-light.svg">
-  <img alt="Claude token usage card with total tokens, a split by model and tokens per week" src="cards/usage-light.svg" width="800">
+  <source media="(prefers-color-scheme: dark)" srcset="cards/usage-dark.svg?v=5cdc05ba21">
+  <source media="(prefers-color-scheme: light)" srcset="cards/usage-light.svg?v=5cdc05ba21">
+  <img alt="Claude token usage card with total tokens, a split by model and tokens per week" src="cards/usage-light.svg?v=5cdc05ba21" width="800">
 </picture>
 
 <!-- usage:start -->

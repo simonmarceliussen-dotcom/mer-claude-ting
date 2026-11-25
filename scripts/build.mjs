@@ -15,6 +15,7 @@
  *
  * No dependencies. Node 18 or newer.
  */
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -602,17 +603,20 @@ function readmeTables(s, dates) {
   return lines.join('\n');
 }
 
-function updateReadme(block) {
+function updateReadme(block, version) {
   if (!fs.existsSync(FILES.readme)) return false;
   const start = '<!-- usage:start -->';
   const end = '<!-- usage:end -->';
-  const readme = fs.readFileSync(FILES.readme, 'utf8');
+  const original = fs.readFileSync(FILES.readme, 'utf8');
+  // Every new card gets a new address, so GitHub and browsers fetch it
+  // instead of showing a cached copy of the old one.
+  let readme = original.replace(/(cards\/usage-(?:dark|light)\.svg)(\?v=[0-9a-f]+)?/g, `$1?v=${version}`);
   const a = readme.indexOf(start);
   const b = readme.indexOf(end);
-  if (a < 0 || b < a) return false;
-  const next = `${readme.slice(0, a + start.length)}\n${block}\n${readme.slice(b)}`;
-  if (next !== readme) fs.writeFileSync(FILES.readme, next);
-  return true;
+  const found = a >= 0 && b > a;
+  if (found) readme = `${readme.slice(0, a + start.length)}\n${block}\n${readme.slice(b)}`;
+  if (readme !== original) fs.writeFileSync(FILES.readme, readme);
+  return found;
 }
 
 // ------------------------------------------------------------------- main
@@ -629,9 +633,13 @@ function main() {
   const s = summarize(entries, config, dates, now);
 
   fs.mkdirSync(FILES.cards, { recursive: true });
+  const hash = createHash('sha256');
   for (const theme of Object.keys(THEMES)) {
-    fs.writeFileSync(path.join(FILES.cards, `usage-${theme}.svg`), renderCard(s, config, dates, theme));
+    const svg = renderCard(s, config, dates, theme);
+    fs.writeFileSync(path.join(FILES.cards, `usage-${theme}.svg`), svg);
+    hash.update(svg);
   }
+  const version = hash.digest('hex').slice(0, 10);
 
   const summary = {
     updated: now.toISOString(),
@@ -665,7 +673,7 @@ function main() {
     message: compact(s.total.tokens),
     color: 'e76624',
   })}\n`);
-  const readme = updateReadme(readmeTables(s, dates));
+  const readme = updateReadme(readmeTables(s, dates), version);
 
   for (const w of warnings) console.warn(`warning: ${w}`);
   const sessions = `${fmtInt(s.sessions)} ${s.sessions === 1 ? 'session' : 'sessions'}`;
