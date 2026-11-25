@@ -29,14 +29,24 @@ const FILES = {
   cards: path.join(ROOT, 'cards'),
 };
 
-// Snapshot field names, as Claude Code reports them in modelUsage.
+// Field names in a per-model snapshot, as Claude Code reports them in a
+// finished turn's modelUsage.
 const FIELDS = {
   input: 'inputTokens',
   output: 'outputTokens',
   cacheWrite: 'cacheCreationInputTokens',
   cacheRead: 'cacheReadInputTokens',
 };
+// Field names in a session-total snapshot, as get_session reports them in
+// external_metadata.usage. These totals are not split by model.
+const USAGE_FIELDS = {
+  input: 'input_tokens',
+  output: 'output_tokens',
+  cacheWrite: 'cache_write_tokens',
+  cacheRead: 'cache_read_tokens',
+};
 const KINDS = Object.keys(FIELDS);
+const UNSPLIT = 'unsplit';
 
 const DEFAULT_CONFIG = { timezone: 'Europe/Oslo', title: 'Claude token usage', weeks: 12 };
 
@@ -82,12 +92,21 @@ function money(value, where) {
 
 const zero = () => ({ input: 0, output: 0, cacheWrite: 0, cacheRead: 0, cost: 0 });
 const tokensOf = (u) => u.input + u.output + u.cacheWrite + u.cacheRead;
+const isZero = (u) => KINDS.every((k) => u[k] === 0) && Math.abs(u.cost) < 1e-9;
 
 function add(into, u) {
   for (const k of KINDS) into[k] += u[k];
   into.cost += u.cost;
   return into;
 }
+
+function sub(a, b) {
+  const d = { cost: a.cost - b.cost };
+  for (const k of KINDS) d[k] = a[k] - b[k];
+  return d;
+}
+
+const sumModels = (models) => Object.values(models).reduce((acc, u) => add(acc, u), zero());
 
 function escapeXml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -158,6 +177,7 @@ function makeDates(timeZone) {
 
 /** "claude-opus-5-5" -> { group: "opus", label: "Opus 5.5" } */
 function describeModel(id) {
+  if (id === UNSPLIT) return { group: 'other', family: UNSPLIT, label: 'Not split by model' };
   const bare = id.replace(/\[.*\]$/, '');
   let family = null;
   let version = null;
@@ -202,17 +222,25 @@ function loadSnapshots() {
       fail(`${where} is not valid JSON (${e.message})`);
     }
     if (typeof o.session !== 'string' || !o.session) fail(`${where}: "session" must be a non-empty string`);
-    if (!o.models || typeof o.models !== 'object' || Array.isArray(o.models)) fail(`${where}: "models" must be an object`);
-    const models = {};
-    for (const [id, m] of Object.entries(o.models)) {
-      const u = { cost: money(m.costUSD ?? 0, `${where}: ${id}.costUSD`) };
-      for (const [k, field] of Object.entries(FIELDS)) u[k] = count(m[field] ?? 0, `${where}: ${id}.${field}`);
-      models[id] = u;
-    }
-    if (o.totalCostUSD != null) {
-      const sum = Object.values(models).reduce((a, u) => a + u.cost, 0);
-      if (Math.abs(sum - money(o.totalCostUSD, `${where}: totalCostUSD`)) > 0.01) {
-        fail(`${where}: the model costs add up to ${sum.toFixed(4)} but totalCostUSD is ${o.totalCostUSD}, so a number was copied wrong`);
+    let models = null;
+    let totals = null;
+    if (o.usage != null) {
+      if (typeof o.usage !== 'object' || Array.isArray(o.usage)) fail(`${where}: "usage" must be an object`);
+      totals = { cost: money(o.usage.cost_usd ?? 0, `${where}: usage.cost_usd`) };
+      for (const [k, field] of Object.entries(USAGE_FIELDS)) totals[k] = count(o.usage[field] ?? 0, `${where}: usage.${field}`);
+    } else {
+      if (!o.models || typeof o.models !== 'object' || Array.isArray(o.models)) fail(`${where}: needs "models" or "usage"`);
+      models = {};
+      for (const [id, m] of Object.entries(o.models)) {
+        const u = { cost: money(m.costUSD ?? 0, `${where}: ${id}.costUSD`) };
+        for (const [k, field] of Object.entries(FIELDS)) u[k] = count(m[field] ?? 0, `${where}: ${id}.${field}`);
+        models[id] = u;
+      }
+      if (o.totalCostUSD != null) {
+        const sum = Object.values(models).reduce((a, u) => a + u.cost, 0);
+        if (Math.abs(sum - money(o.totalCostUSD, `${where}: totalCostUSD`)) > 0.01) {
+          fail(`${where}: the model costs add up to ${sum.toFixed(4)} but totalCostUSD is ${o.totalCostUSD}, so a number was copied wrong`);
+        }
       }
     }
     snapshots.push({
@@ -221,6 +249,7 @@ function loadSnapshots() {
       at: parseTime(o.at, `${where}: "at"`),
       since: o.since == null ? null : parseTime(o.since, `${where}: "since"`),
       models,
+      totals,
     });
   });
   return snapshots;
@@ -233,6 +262,11 @@ function loadSnapshots() {
  * snapshots of one session, dated to the day of the newer one. A session's
  * first snapshot covers everything since the session started, so its entry
  * runs from the start day (`from`) to the snapshot day (`to`).
+ *
+ * A session-total snapshot can run ahead of the newest per-model one (a turn
+ * still in progress). The part beyond the per-model numbers is counted as
+ * "not split by model", and moved back out once a later per-model snapshot
+ * covers it, so nothing is counted twice.
  */
 function buildLedger(snapshots, dates, warnings) {
   const bySession = new Map();
@@ -249,24 +283,39 @@ function buildLedger(snapshots, dates, warnings) {
       if (last && last.at.getTime() === s.at.getTime()) unique[unique.length - 1] = s;
       else unique.push(s);
     }
-    let prev = {};
+    let perModel = {};
+    let unsplit = zero();
+    const freshStart = (s) => {
+      warnings.push(`session ${session}: the numbers on line ${s.line} are lower than before, so they are counted as a fresh start`);
+      perModel = {};
+      unsplit = zero();
+    };
     unique.forEach((s, index) => {
-      const dropped = Object.entries(s.models).some(([id, u]) => {
-        const p = prev[id];
-        return p && KINDS.some((k) => u[k] < p[k]);
-      });
-      if (dropped) {
-        warnings.push(`session ${session}: the numbers on line ${s.line} are lower than before, so they are counted as a fresh start`);
-        prev = {};
+      const delta = {};
+      if (s.models) {
+        const dropped = Object.entries(s.models).some(([id, u]) => perModel[id] && KINDS.some((k) => u[k] < perModel[id][k]));
+        if (dropped) {
+          freshStart(s);
+        } else if (!isZero(unsplit)) {
+          delta[UNSPLIT] = sub(zero(), unsplit);
+          unsplit = zero();
+        }
+        for (const [id, u] of Object.entries(s.models)) {
+          const d = sub(u, perModel[id] || zero());
+          d.cost = Math.max(0, d.cost);
+          delta[id] = d;
+        }
+        perModel = { ...perModel, ...s.models };
+      } else {
+        let extra = sub(s.totals, sumModels(perModel));
+        if (KINDS.some((k) => extra[k] < 0)) {
+          freshStart(s);
+          extra = { ...s.totals };
+        }
+        delta[UNSPLIT] = sub(extra, unsplit);
+        unsplit = extra;
       }
-      const models = {};
-      for (const [id, u] of Object.entries(s.models)) {
-        const p = prev[id] || zero();
-        const d = { cost: Math.max(0, u.cost - p.cost) };
-        for (const k of KINDS) d[k] = u[k] - p[k];
-        if (tokensOf(d) > 0 || d.cost > 0) models[id] = d;
-      }
-      prev = { ...prev, ...s.models };
+      const models = Object.fromEntries(Object.entries(delta).filter(([, d]) => !isZero(d)));
       const to = dates.day(s.at);
       let from = index === 0 && s.since ? dates.day(s.since) : to;
       if (from > to) from = to;
@@ -301,6 +350,7 @@ function summarize(entries, config, dates, now) {
 
   const models = [...byModel.entries()]
     .map(([id, u]) => ({ id, ...describeModel(id), ...u, tokens: tokensOf(u) }))
+    .filter((m) => m.tokens !== 0 || Math.abs(m.cost) >= 0.005)
     .sort((a, b) => b.tokens - a.tokens || a.id.localeCompare(b.id));
 
   const totalTokens = tokensOf(total);
@@ -321,6 +371,14 @@ function summarize(entries, config, dates, now) {
     const start = dates.addDays(thisWeek, -7 * i);
     const perGroup = Object.fromEntries(GROUP_ORDER.map((g) => [g, 0]));
     for (const [id, u] of weeks.get(start) || []) perGroup[describeModel(id).group] += tokensOf(u);
+    // A "not split by model" correction can land in a later week than the
+    // usage it corrects. Keep the week's total and draw no negative segment.
+    const deficit = GROUP_ORDER.reduce((a, g) => a + Math.min(0, perGroup[g]), 0);
+    if (deficit < 0) {
+      for (const g of GROUP_ORDER) perGroup[g] = Math.max(0, perGroup[g]);
+      const biggest = GROUP_ORDER.reduce((a, g) => (perGroup[g] > perGroup[a] ? g : a));
+      perGroup[biggest] = Math.max(0, perGroup[biggest] + deficit);
+    }
     chartWeeks.push({ start, groups: perGroup, tokens: Object.values(perGroup).reduce((a, b) => a + b, 0) });
   }
 

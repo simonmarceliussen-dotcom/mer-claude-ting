@@ -1,39 +1,47 @@
 {
-  "updated": "2026-11-25T12:01:02.132Z",
+  "updated": "2026-11-25T12:16:45.937Z",
   "timezone": "Europe/Oslo",
   "since": "2026-11-02",
-  "sessions": 1,
+  "sessions": 3,
   "totals": {
-    "tokens": 140430358,
-    "input": 2364045,
-    "output": 1092735,
-    "cacheWrite": 3307900,
-    "cacheRead": 133665678,
-    "costUSD": 73.48
+    "tokens": 199970964,
+    "input": 2685243,
+    "output": 1615127,
+    "cacheWrite": 4111154,
+    "cacheRead": 191559440,
+    "costUSD": 101.57
   },
   "models": [
     {
       "id": "claude-opus-5-5",
       "label": "Opus 5.5",
-      "tokens": 137906578,
-      "input": 12669,
-      "output": 920331,
-      "cacheWrite": 3307900,
-      "cacheRead": 133665678,
-      "costUSD": 71.65
+      "tokens": 197052770,
+      "input": 14081,
+      "output": 1417810,
+      "cacheWrite": 4094457,
+      "cacheRead": 191526422,
+      "costUSD": 99.47
     },
     {
       "id": "claude-haiku-5-5",
       "label": "Haiku 5.5",
-      "tokens": 2523780,
-      "input": 2351376,
-      "output": 172404,
-      "cacheWrite": 0,
-      "cacheRead": 0,
-      "costUSD": 1.83
+      "tokens": 2918194,
+      "input": 2671162,
+      "output": 197317,
+      "cacheWrite": 16697,
+      "cacheRead": 33018,
+      "costUSD": 2.1
     }
   ],
   "weeks": [
+    {
+      "start": "2026-11-23",
+      "tokens": 59540606,
+      "byModel": {
+        "claude-haiku-5-5": 394414,
+        "claude-opus-5-5": 59146192
+      }
+    },
     {
       "start": "2026-11-02",
       "tokens": 140430358,

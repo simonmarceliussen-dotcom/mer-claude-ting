@@ -16,6 +16,13 @@
  *       just created_at, total_cost_usd and modelUsage copied from the newest
  *       result event
  *
+ *   node scripts/snapshot-from-events.mjs --session <id> --since <created_at> --stdin <<'EOF'
+ *   {"updated_at": "...", "usage": {...}}
+ *   EOF
+ *       add the session-wide totals from get_session (its updated_at and
+ *       external_metadata.usage). These are not split by model, but they are
+ *       cheap to read and include turns that are still running.
+ *
  * Add --print to only print the line. A snapshot that is already recorded for
  * the same session and time is skipped. Only numbers are copied, never any
  * conversation text.
@@ -55,16 +62,36 @@ function parseObjectAt(text, start) {
   throw new Error('the JSON object never closes');
 }
 
-/** Finds result events in any of the accepted shapes. */
-function readEvents(text) {
-  let root;
+function readRoot(text) {
   try {
     const marker = text.indexOf('{"ccr"');
-    if (marker >= 0) root = parseObjectAt(text, marker).ccr;
-    else root = parseObjectAt(text, text.indexOf('{'));
+    if (marker >= 0) return parseObjectAt(text, marker).ccr;
+    return parseObjectAt(text, text.indexOf('{'));
   } catch (e) {
-    fail(`could not read JSON (${e.message})`);
+    return fail(`could not read JSON (${e.message})`);
   }
+}
+
+/** Session-wide totals from a get_session record, or from {updated_at, usage}. */
+function sessionTotals(root) {
+  const usage = root && root.external_metadata ? root.external_metadata.usage : root && root.usage;
+  if (!usage || typeof usage !== 'object' || !('cache_read_tokens' in usage)) return null;
+  if (!root.updated_at) fail('session totals need the session\'s updated_at');
+  const pick = (k) => usage[k] ?? 0;
+  return {
+    at: root.updated_at,
+    usage: {
+      input_tokens: pick('input_tokens'),
+      output_tokens: pick('output_tokens'),
+      cache_write_tokens: pick('cache_write_tokens'),
+      cache_read_tokens: pick('cache_read_tokens'),
+      cost_usd: pick('cost_usd'),
+    },
+  };
+}
+
+/** Finds result events in any of the accepted shapes. */
+function readEvents(root) {
   if (Array.isArray(root)) return { data: root };
   if (root && (Array.isArray(root.data) || 'has_more' in root)) return { ...root, data: root.data || [] };
   if (root && (root.result || root.modelUsage)) return { data: [root] };
@@ -123,26 +150,32 @@ function main() {
     fail('usage: snapshot-from-events.mjs --session <id> [--since <created_at>] (<file> | --stdin) [--print], or --status');
   }
 
-  const page = readEvents(fs.readFileSync(fromStdin ? 0 : file, 'utf8'));
-  const newest = newestResult(page.data);
-  if (!newest) {
-    const hint = page.has_more ? `page back with before_id "${page.first_id}"` : 'the session has no finished turn yet';
-    fail(`no finished turn in this page: ${hint}`, 2);
+  const root = readRoot(fs.readFileSync(fromStdin ? 0 : file, 'utf8'));
+  const totals = sessionTotals(root);
+  let snapshot;
+  if (totals) {
+    snapshot = { session, ...(since ? { since } : {}), at: totals.at, usage: totals.usage };
+  } else {
+    const page = readEvents(root);
+    const newest = newestResult(page.data);
+    if (!newest) {
+      const hint = page.has_more ? `page back with before_id "${page.first_id}"` : 'the session has no finished turn yet';
+      fail(`no finished turn in this page: ${hint}`, 2);
+    }
+    const models = {};
+    for (const [id, m] of Object.entries(newest.body.modelUsage)) {
+      models[id] = {
+        inputTokens: m.inputTokens ?? 0,
+        outputTokens: m.outputTokens ?? 0,
+        cacheCreationInputTokens: m.cacheCreationInputTokens ?? 0,
+        cacheReadInputTokens: m.cacheReadInputTokens ?? 0,
+        costUSD: m.costUSD ?? 0,
+      };
+    }
+    snapshot = { session, ...(since ? { since } : {}), at: newest.at };
+    if (typeof newest.body.total_cost_usd === 'number') snapshot.totalCostUSD = newest.body.total_cost_usd;
+    snapshot.models = models;
   }
-
-  const models = {};
-  for (const [id, m] of Object.entries(newest.body.modelUsage)) {
-    models[id] = {
-      inputTokens: m.inputTokens ?? 0,
-      outputTokens: m.outputTokens ?? 0,
-      cacheCreationInputTokens: m.cacheCreationInputTokens ?? 0,
-      cacheReadInputTokens: m.cacheReadInputTokens ?? 0,
-      costUSD: m.costUSD ?? 0,
-    };
-  }
-  const snapshot = { session, ...(since ? { since } : {}), at: newest.at };
-  if (typeof newest.body.total_cost_usd === 'number') snapshot.totalCostUSD = newest.body.total_cost_usd;
-  snapshot.models = models;
   const line = JSON.stringify(snapshot);
   if (printOnly) return console.log(line);
 
