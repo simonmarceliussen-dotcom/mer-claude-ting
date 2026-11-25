@@ -179,8 +179,11 @@ function main() {
   const line = JSON.stringify(snapshot);
   if (printOnly) return console.log(line);
 
+  // A per-model snapshot and a session total can share a time; only the same
+  // kind at the same time is a duplicate.
   const atTime = new Date(snapshot.at).getTime();
-  if (readSnapshots().some((o) => o.session === session && new Date(o.at).getTime() === atTime)) {
+  const kind = (o) => (o.usage ? 'usage' : 'models');
+  if (readSnapshots().some((o) => o.session === session && kind(o) === kind(snapshot) && new Date(o.at).getTime() === atTime)) {
     return console.log(`unchanged: ${session} already has a snapshot at ${snapshot.at}`);
   }
   const existing = fs.existsSync(SNAPSHOTS) ? fs.readFileSync(SNAPSHOTS, 'utf8') : '';

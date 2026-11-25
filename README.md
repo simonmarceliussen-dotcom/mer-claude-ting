@@ -5,22 +5,21 @@ ting for claude
 ## My Claude token usage
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="cards/usage-dark-ca343d5dc4.svg">
-  <source media="(prefers-color-scheme: light)" srcset="cards/usage-light-ca343d5dc4.svg">
-  <img alt="Claude token usage card with total tokens, a split by model and tokens per week" src="cards/usage-light-ca343d5dc4.svg" width="800">
+  <source media="(prefers-color-scheme: dark)" srcset="cards/usage-dark-6f108a5f0c.svg">
+  <source media="(prefers-color-scheme: light)" srcset="cards/usage-light-6f108a5f0c.svg">
+  <img alt="Claude token usage card with total tokens, a split by model and tokens per week" src="cards/usage-light-6f108a5f0c.svg" width="800">
 </picture>
 
 <!-- usage:start -->
 | Model | Input | Output | Cache write | Cache read | Total | At API prices |
 |---|---:|---:|---:|---:|---:|---:|
-| Opus 5.5 | 15,683 | 1,496,368 | 4,649,466 | 207,717,854 | 213,879,371 | $108.73 |
-| Not split by model | 4,644 | 57,255 | 569,031 | 27,986,691 | 28,617,621 | $11.33 |
+| Opus 5.5 | 23,363 | 1,553,764 | 5,222,811 | 239,342,243 | 246,142,181 | $120.82 |
 | Haiku 5.5 | 2,671,162 | 197,317 | 16,697 | 33,018 | 2,918,194 | $2.10 |
-| **All models** | **2,691,489** | **1,750,940** | **5,235,194** | **235,737,563** | **245,415,186** | **$122.15** |
+| **All models** | **2,694,525** | **1,751,081** | **5,239,508** | **239,375,261** | **249,060,375** | **$122.92** |
 
 | Week starting | Tokens |
 |---|---:|
-| 23 Nov 2026 | 104,984,828 |
+| 23 Nov 2026 | 108,630,017 |
 | 2 Nov 2026 | 140,430,358 |
 
 Updated 25 Nov 2026 from 3 sessions.

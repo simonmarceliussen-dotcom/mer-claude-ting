@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="476" viewBox="0 0 800 476" role="img" aria-labelledby="title desc">
-<title id="title">Claude token usage: 245.4M tokens since 2 Nov 2026</title>
-<desc id="desc">Opus 5.5 87.2%. Haiku 5.5 1.2%. Not split by model 11.7%. busiest week started 2 Nov 2026 with 140.4M tokens</desc>
+<title id="title">Claude token usage: 249.1M tokens since 2 Nov 2026</title>
+<desc id="desc">Opus 5.5 98.8%. Haiku 5.5 1.2%. busiest week started 2 Nov 2026 with 140.4M tokens</desc>
 <style>
 text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif}
 .t{fill:#f0f6fc}.m{fill:#9198a1}.n{font-variant-numeric:tabular-nums}
@@ -8,8 +8,8 @@ text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helveti
 <rect x="0.5" y="0.5" width="799" height="475" rx="12" fill="#0d1117" stroke="#3d444d"/>
 <text x="28" y="44" class="t" font-size="16" font-weight="600">Claude token usage</text>
 <text x="772" y="44" class="m" font-size="12" text-anchor="end">Updated 25 Nov 2026</text>
-<text x="28" y="116" class="t" font-size="52" font-weight="600" letter-spacing="-0.5">245.4M</text>
-<text x="28" y="142" class="m" font-size="13">245,415,186 tokens since 2 Nov 2026</text>
+<text x="28" y="116" class="t" font-size="52" font-weight="600" letter-spacing="-0.5">249.1M</text>
+<text x="28" y="142" class="m" font-size="13">249,060,375 tokens since 2 Nov 2026</text>
 <text x="340" y="82" class="m" font-size="12">Input</text>
 <text x="340" y="106" class="t" font-size="20" font-weight="600">2.69M</text>
 <text x="485" y="82" class="m" font-size="12">Output</text>
@@ -17,28 +17,24 @@ text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helveti
 <text x="630" y="82" class="m" font-size="12">Cache write</text>
 <text x="630" y="106" class="t" font-size="20" font-weight="600">5.24M</text>
 <text x="340" y="130" class="m" font-size="12">Cache read</text>
-<text x="340" y="154" class="t" font-size="20" font-weight="600">235.7M</text>
+<text x="340" y="154" class="t" font-size="20" font-weight="600">239.4M</text>
 <text x="485" y="130" class="m" font-size="12">At API prices</text>
-<text x="485" y="154" class="t" font-size="20" font-weight="600">$122.15</text>
+<text x="485" y="154" class="t" font-size="20" font-weight="600">$122.92</text>
 <text x="630" y="130" class="m" font-size="12">Sessions</text>
 <text x="630" y="154" class="t" font-size="20" font-weight="600">3</text>
 <path d="M28 180.5H772" stroke="#21262d"/>
 <text x="28" y="208" class="t" font-size="13" font-weight="600">By model</text>
 <clipPath id="bar"><rect x="28" y="220" width="744" height="8" rx="4"/></clipPath>
 <g clip-path="url(#bar)">
-<rect x="28" y="220" width="644.91" height="8" fill="#e76624"/>
-<rect x="674.91" y="220" width="8.8" height="8" fill="#00a888"/>
-<rect x="685.71" y="220" width="86.29" height="8" fill="#6e7681"/>
+<rect x="28" y="220" width="733.31" height="8" fill="#e76624"/>
+<rect x="763.31" y="220" width="8.69" height="8" fill="#00a888"/>
 </g>
 <rect x="28" y="241" width="10" height="10" rx="2" fill="#e76624"/>
 <text x="44" y="250" class="t" font-size="13">Opus 5.5</text>
-<text x="44" y="268" class="m" font-size="12">213.9M (87.2%)</text>
+<text x="44" y="268" class="m" font-size="12">246.1M (98.8%)</text>
 <rect x="214" y="241" width="10" height="10" rx="2" fill="#00a888"/>
 <text x="230" y="250" class="t" font-size="13">Haiku 5.5</text>
 <text x="230" y="268" class="m" font-size="12">2.92M (1.2%)</text>
-<rect x="400" y="241" width="10" height="10" rx="2" fill="#6e7681"/>
-<text x="416" y="250" class="t" font-size="13">Not split by model</text>
-<text x="416" y="268" class="m" font-size="12">28.6M (11.7%)</text>
 <text x="28" y="306" class="t" font-size="13" font-weight="600">Tokens per week</text>
 <text x="772" y="306" class="m" font-size="12" text-anchor="end">Last 12 weeks</text>
 <path d="M70 386.5H772" stroke="#21262d"/>
@@ -59,9 +55,8 @@ text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helveti
 <text x="567.25" y="454" class="m" font-size="11" text-anchor="middle">2 Nov</text>
 <text x="625.75" y="454" class="m" font-size="11" text-anchor="middle">9 Nov</text>
 <text x="684.25" y="454" class="m" font-size="11" text-anchor="middle">16 Nov</text>
-<path d="M730.75 436 V398.01 A0 0 0 0 1 730.75 398.01 H754.75 A0 0 0 0 1 754.75 398.01 V436 Z" fill="#e76624"/>
-<path d="M730.75 395.81 V387.50 A4 4 0 0 1 734.75 383.50 H750.75 A4 4 0 0 1 754.75 387.50 V395.81 Z" fill="#6e7681"/>
-<text x="742.75" y="377.51" class="t" font-size="12" font-weight="600" text-anchor="middle">105M</text>
+<path d="M730.75 436 V385.88 A4 4 0 0 1 734.75 381.88 H750.75 A4 4 0 0 1 754.75 385.88 V436 Z" fill="#e76624"/>
+<text x="742.75" y="375.88" class="t" font-size="12" font-weight="600" text-anchor="middle">108.6M</text>
 <text x="742.75" y="454" class="m" font-size="11" text-anchor="middle">23 Nov</text>
 <path d="M70 436.5H772" stroke="#3d444d"/>
 </svg>
