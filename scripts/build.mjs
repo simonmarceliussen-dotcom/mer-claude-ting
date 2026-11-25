@@ -281,8 +281,12 @@ function buildLedger(snapshots, dates, warnings) {
     const unique = [];
     for (const s of list) {
       const last = unique[unique.length - 1];
-      if (last && last.at.getTime() === s.at.getTime()) unique[unique.length - 1] = s;
-      else unique.push(s);
+      if (last && last.at.getTime() === s.at.getTime()) {
+        // The same moment twice: per-model numbers win over a session total.
+        if (s.models || !last.models) unique[unique.length - 1] = s;
+      } else {
+        unique.push(s);
+      }
     }
     let perModel = {};
     let unsplit = zero();
@@ -308,11 +312,11 @@ function buildLedger(snapshots, dates, warnings) {
         }
         perModel = { ...perModel, ...s.models };
       } else {
-        let extra = sub(s.totals, sumModels(perModel));
-        if (KINDS.some((k) => extra[k] < 0)) {
-          freshStart(s);
-          extra = { ...s.totals };
-        }
+        // Only the part beyond the per-model numbers is new. A session total
+        // can also lag behind them, and then it adds nothing.
+        const base = sumModels(perModel);
+        const extra = { cost: Math.max(0, s.totals.cost - base.cost) };
+        for (const k of KINDS) extra[k] = Math.max(0, s.totals[k] - base[k]);
         delta[UNSPLIT] = sub(extra, unsplit);
         unsplit = extra;
       }
