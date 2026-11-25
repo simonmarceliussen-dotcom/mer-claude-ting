@@ -608,9 +608,10 @@ function updateReadme(block, version) {
   const start = '<!-- usage:start -->';
   const end = '<!-- usage:end -->';
   const original = fs.readFileSync(FILES.readme, 'utf8');
-  // Every new card gets a new address, so GitHub and browsers fetch it
-  // instead of showing a cached copy of the old one.
-  let readme = original.replace(/(cards\/usage-(?:dark|light)\.svg)(\?v=[0-9a-f]+)?/g, `$1?v=${version}`);
+  // Every new card gets a new file name, so browsers fetch it instead of
+  // showing a cached copy of the old one. (A ?v= query is not enough: GitHub's
+  // redirect to the image server drops it.)
+  let readme = original.replace(/cards\/usage-(dark|light)(?:-[0-9a-f]{6,})?\.svg(?:\?v=[0-9a-f]+)?/g, `cards/usage-$1-${version}.svg`);
   const a = readme.indexOf(start);
   const b = readme.indexOf(end);
   const found = a >= 0 && b > a;
@@ -632,14 +633,20 @@ function main() {
   const entries = buildLedger(loadSnapshots(), dates, warnings);
   const s = summarize(entries, config, dates, now);
 
+  // usage-<theme>.svg keeps a stable name for embedding elsewhere. The README
+  // uses usage-<theme>-<version>.svg, a new name whenever the card changes.
   fs.mkdirSync(FILES.cards, { recursive: true });
+  const svgs = Object.fromEntries(Object.keys(THEMES).map((theme) => [theme, renderCard(s, config, dates, theme)]));
   const hash = createHash('sha256');
-  for (const theme of Object.keys(THEMES)) {
-    const svg = renderCard(s, config, dates, theme);
-    fs.writeFileSync(path.join(FILES.cards, `usage-${theme}.svg`), svg);
-    hash.update(svg);
-  }
+  for (const svg of Object.values(svgs)) hash.update(svg);
   const version = hash.digest('hex').slice(0, 10);
+  for (const name of fs.readdirSync(FILES.cards)) {
+    if (/^usage-(dark|light)-[0-9a-f]{6,}\.svg$/.test(name)) fs.unlinkSync(path.join(FILES.cards, name));
+  }
+  for (const [theme, svg] of Object.entries(svgs)) {
+    fs.writeFileSync(path.join(FILES.cards, `usage-${theme}.svg`), svg);
+    fs.writeFileSync(path.join(FILES.cards, `usage-${theme}-${version}.svg`), svg);
+  }
 
   const summary = {
     updated: now.toISOString(),
