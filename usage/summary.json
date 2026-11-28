@@ -1,26 +1,26 @@
 {
-  "updated": "2026-11-25T19:20:09.087Z",
+  "updated": "2026-11-28T05:56:06.423Z",
   "timezone": "Europe/Oslo",
   "since": "2026-11-02",
   "sessions": 3,
   "totals": {
-    "tokens": 249060375,
-    "input": 2694525,
-    "output": 1751081,
-    "cacheWrite": 5239508,
-    "cacheRead": 239375261,
-    "costUSD": 122.92
+    "tokens": 271671399,
+    "input": 2699643,
+    "output": 1780974,
+    "cacheWrite": 7068167,
+    "cacheRead": 260122615,
+    "costUSD": 142.32
   },
   "models": [
     {
       "id": "claude-opus-5-5",
       "label": "Opus 5.5",
-      "tokens": 246142181,
-      "input": 23363,
-      "output": 1553764,
-      "cacheWrite": 5222811,
-      "cacheRead": 239342243,
-      "costUSD": 120.82
+      "tokens": 268753205,
+      "input": 28481,
+      "output": 1583657,
+      "cacheWrite": 7051470,
+      "cacheRead": 260089597,
+      "costUSD": 140.22
     },
     {
       "id": "claude-haiku-5-5",
@@ -36,10 +36,10 @@
   "weeks": [
     {
       "start": "2026-11-23",
-      "tokens": 108630017,
+      "tokens": 131241041,
       "byModel": {
         "claude-haiku-5-5": 394414,
-        "claude-opus-5-5": 108235603,
+        "claude-opus-5-5": 130846627,
         "unsplit": 0
       }
     },
